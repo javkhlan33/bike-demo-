@@ -1,0 +1,121 @@
+// Foundation schema for BIKE.MN
+// Ownership history is first-class so transfers can be added later without redesign.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+enum BicycleStatus {
+  ACTIVE
+  STOLEN
+  TRANSFERRED
+  ARCHIVED
+}
+
+enum OwnershipChangeType {
+  REGISTRATION
+  TRANSFER
+  RECOVERY
+}
+
+enum BicycleStatusChangeReason {
+  STOLEN_REPORTED
+  BICYCLE_RECOVERED
+}
+
+enum BicycleType {
+  MTB
+  ROAD
+  GRAVEL
+  BMX
+  CITY
+  FOLDING
+  EBIKE
+  KIDS
+  OTHER
+}
+
+/// App user synced from Clerk. Private fields must never be exposed publicly.
+model User {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  clerkId     String   @unique
+  email       String?
+  phone       String?
+  displayName String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  ownedBicycles    Bicycle[]         @relation("CurrentOwner")
+  ownershipRecords OwnershipRecord[]
+}
+
+/// Registered bicycle. serialNumber is unique for fast public lookup.
+model Bicycle {
+  id                String        @id @default(auto()) @map("_id") @db.ObjectId
+  serialNumber      String        @unique
+  /// Public-safe certificate id (BMN-XXXX-XXXX). Not derived from Mongo id or QR token.
+  certificateNumber String?       @unique
+  brand             String
+  model             String
+  bicycleType       BicycleType
+  color             String?
+  year              Int?
+  frameSize         String?
+  wheelSize         String?
+  purchaseDate      DateTime?
+  description       String?
+  imagePublicIds    String[]
+  /// Public-safe side photo (marketplace/certificate/verify).
+  sidePhotoPublicId String?
+  sidePhotoUrl      String?
+  /// Private serial evidence — never expose via public DTO/API.
+  serialPhotoPublicId String?
+  status            BicycleStatus @default(ACTIVE)
+  qrCodeToken       String        @unique
+  currentOwnerId    String?       @db.ObjectId
+  currentOwner      User?         @relation("CurrentOwner", fields: [currentOwnerId], references: [id])
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+
+  ownershipRecords OwnershipRecord[]
+  statusHistory    BicycleStatusHistory[]
+
+  @@index([status])
+  @@index([currentOwnerId])
+}
+
+/// Append-only ownership history. Prefer ending the previous record over deleting it.
+model OwnershipRecord {
+  id         String              @id @default(auto()) @map("_id") @db.ObjectId
+  bicycleId  String              @db.ObjectId
+  bicycle    Bicycle             @relation(fields: [bicycleId], references: [id])
+  ownerId    String              @db.ObjectId
+  owner      User                @relation(fields: [ownerId], references: [id])
+  changeType OwnershipChangeType
+  notes      String?
+  startedAt  DateTime            @default(now())
+  endedAt    DateTime?
+  createdAt  DateTime            @default(now())
+
+  @@index([bicycleId])
+  @@index([ownerId])
+}
+
+/// Append-only bicycle status transitions (not ownership transfers).
+model BicycleStatusHistory {
+  id         String                    @id @default(auto()) @map("_id") @db.ObjectId
+  bicycleId  String                    @db.ObjectId
+  bicycle    Bicycle                   @relation(fields: [bicycleId], references: [id])
+  fromStatus BicycleStatus
+  toStatus   BicycleStatus
+  reason     BicycleStatusChangeReason
+  createdAt  DateTime                  @default(now())
+
+  @@index([bicycleId])
+  @@index([createdAt])
+}
