@@ -10,7 +10,15 @@ import {
 } from "@clerk/nextjs";
 import { Button } from "@/components/ui/button";
 
+const clerkUiEnabled = Boolean(
+  process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY?.trim(),
+);
+
 export function AuthControls() {
+  if (!clerkUiEnabled) {
+    return null;
+  }
+
   return (
     <div className="flex items-center gap-2">
       <Show when="signed-out">

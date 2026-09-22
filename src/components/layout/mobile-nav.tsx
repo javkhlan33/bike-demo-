@@ -20,6 +20,10 @@ import {
 import { siteConfig } from "@/lib/site-config";
 import { cn } from "@/lib/utils";
 
+const clerkUiEnabled = Boolean(
+  process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY?.trim(),
+);
+
 export function MobileNav() {
   return (
     <Sheet>
@@ -68,40 +72,45 @@ export function MobileNav() {
             Бидний тухай
           </SheetClose>
         </nav>
-        <div className="mt-auto border-t border-border p-4">
-          <Show when="signed-out">
-            <div className="flex flex-col gap-2">
-              <SignInButton mode="modal">
-                <Button variant="outline" className="w-full">
-                  Нэвтрэх
-                </Button>
-              </SignInButton>
-              <SignUpButton mode="modal">
-                <Button className="w-full">Бүртгүүлэх</Button>
-              </SignUpButton>
-            </div>
-          </Show>
-          <Show when="signed-in">
-            <div className="flex flex-col gap-2">
-              <SheetClose
-                nativeButton={false}
-                render={
-                  <Link
-                    href="/dashboard"
-                    className={cn(buttonVariants({ variant: "outline" }), "w-full")}
-                  />
-                }
-              >
-                Dashboard
-              </SheetClose>
-              <SignOutButton>
-                <Button variant="ghost" className="w-full">
-                  Гарах
-                </Button>
-              </SignOutButton>
-            </div>
-          </Show>
-        </div>
+        {clerkUiEnabled ? (
+          <div className="mt-auto border-t border-border p-4">
+            <Show when="signed-out">
+              <div className="flex flex-col gap-2">
+                <SignInButton mode="modal">
+                  <Button variant="outline" className="w-full">
+                    Нэвтрэх
+                  </Button>
+                </SignInButton>
+                <SignUpButton mode="modal">
+                  <Button className="w-full">Бүртгүүлэх</Button>
+                </SignUpButton>
+              </div>
+            </Show>
+            <Show when="signed-in">
+              <div className="flex flex-col gap-2">
+                <SheetClose
+                  nativeButton={false}
+                  render={
+                    <Link
+                      href="/dashboard"
+                      className={cn(
+                        buttonVariants({ variant: "outline" }),
+                        "w-full",
+                      )}
+                    />
+                  }
+                >
+                  Dashboard
+                </SheetClose>
+                <SignOutButton>
+                  <Button variant="ghost" className="w-full">
+                    Гарах
+                  </Button>
+                </SignOutButton>
+              </div>
+            </Show>
+          </div>
+        ) : null}
       </SheetContent>
     </Sheet>
   );

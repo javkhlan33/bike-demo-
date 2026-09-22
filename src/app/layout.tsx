@@ -4,6 +4,7 @@ import { ClerkProvider } from "@clerk/nextjs";
 import { shadcn } from "@clerk/ui/themes";
 import { SiteFooter } from "@/components/layout/site-footer";
 import { SiteHeader } from "@/components/layout/site-header";
+import { isClerkPublishableConfigured } from "@/lib/env";
 import { siteConfig } from "@/lib/site-config";
 import "@clerk/ui/themes/shadcn.css";
 import "./globals.css";
@@ -35,17 +36,25 @@ export const metadata: Metadata = {
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
+  const content = (
+    <>
+      <SiteHeader />
+      <main className="flex-1">{children}</main>
+      <SiteFooter />
+    </>
+  );
+
   return (
     <html
       lang="mn"
       className={`${manrope.variable} ${literata.variable} ${literataSerif.variable} h-full antialiased`}
     >
       <body className="flex min-h-full flex-col font-sans">
-        <ClerkProvider appearance={{ theme: shadcn }}>
-          <SiteHeader />
-          <main className="flex-1">{children}</main>
-          <SiteFooter />
-        </ClerkProvider>
+        {isClerkPublishableConfigured() ? (
+          <ClerkProvider appearance={{ theme: shadcn }}>{content}</ClerkProvider>
+        ) : (
+          content
+        )}
       </body>
     </html>
   );
